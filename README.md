@@ -118,8 +118,8 @@ This system helps:
 ## Database and Deploy
 
 - **Data set** → https://www.kaggle.com/datasets/vivek468/superstore-dataset-final/suggestions
-- **Cloud ** → """"
-- **github** → "" ""
+- **Cloud ** → https://retailanalyticsplatform.streamlit.app/
+- **github** → https://github.com/dattaBus-anls/-Retail-Analytics-Platform-.git
 
 ---
 
