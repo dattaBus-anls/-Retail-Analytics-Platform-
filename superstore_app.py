@@ -124,16 +124,45 @@ def load_and_preprocess_data():
     uploaded_file = st.sidebar.file_uploader("Upload Superstore CSV", type=['csv'])
     
     # Sample data option
-    use_sample = st.sidebar.checkbox("Use Sample-Superstore.csv from repo", 
-                                   value=not bool(uploaded_file))
+    # use_sample = st.sidebar.checkbox("Use Sample-Superstore.csv from repo", value=not bool(uploaded_file))
+
+    use_sample = st.sidebar.checkbox("Use Sample-Superstore.csv from repo", value=False, key="use_sample")
+
     
     # Manual data entry option
-    use_demo = st.sidebar.checkbox("Use Demo Data", value=False)
+    # use_demo = st.sidebar.checkbox("Use Demo Data", value=False)
+    
+    use_demo = st.sidebar.checkbox("Use Demo Data", value=False, key="use_demo")
+
+    # Show current active source in sidebar
+    st.sidebar.caption(f"📌 Active source: {st.session_state.get('df_source','—')}")
+
+
+
+    # Quick reset to clear current dataset and source selection
+    if st.sidebar.button("🔄 Reset Data Source"):
+        for k in [
+            "df", "df_clean", "rfm", "df_source",
+            "complete_results", "segmentation_results",
+            "basket_results", "business_results"
+        ]:
+            st.session_state.pop(k, None)
+        st.rerun()
+
+
 
     try:
+        # if uploaded_file is not None:
+            # df = pd.read_csv(uploaded_file, encoding='latin1')
+            # source_msg = f"✅ Loaded uploaded CSV: {uploaded_file.name}"
+
+        
         if uploaded_file is not None:
             df = pd.read_csv(uploaded_file, encoding='latin1')
+            st.session_state["df"] = df
+            st.session_state["df_source"] = "Upload"
             source_msg = f"✅ Loaded uploaded CSV: {uploaded_file.name}"
+
             
         elif use_sample:
             # Try common paths for sample file
@@ -149,6 +178,8 @@ def load_and_preprocess_data():
             for path in candidate_paths:
                 if os.path.exists(path):
                     df = pd.read_csv(path, encoding='latin1')
+                    st.session_state["df"] = df
+                    st.session_state["df_source"] = "Sample"
                     source_msg = f"✅ Loaded sample file: {path}"
                     break
             
@@ -176,6 +207,8 @@ def load_and_preprocess_data():
                 'State': np.random.choice(['CA', 'NY', 'TX', 'FL'], n_records),
                 'Segment': np.random.choice(['Consumer', 'Corporate', 'Home Office'], n_records)
             })
+            st.session_state["df"] = df
+            st.session_state["df_source"] = "Demo"
             source_msg = "✅ Generated demo dataset for testing"
             
         else:
@@ -1717,24 +1750,26 @@ def main():
         "📚 Help & Documentation"
     ])
     
-    # Load data
-    if 'df' not in st.session_state:
-        df, success, message = load_and_preprocess_data()
-        if success:
-            st.session_state.df = df
-            st.sidebar.success(message)
-            
-            # Check for existing analysis files
-            existing_files = load_existing_results()
-            if existing_files:
-                st.sidebar.info(f"📁 Found {len(existing_files)} saved analysis files")
+    # Load/refresh data every run so source changes take effect immediately
+    df, success, message = load_and_preprocess_data()
+    if success:
+        st.session_state.df = df
+        st.sidebar.success(message)
+
+        # Check for existing analysis files
+        existing_files = load_existing_results()
+        if existing_files:
+            st.sidebar.info(f"📁 Found {len(existing_files)} saved analysis files")
+    else:
+        if 'df' in st.session_state:
+            df = st.session_state.df
+            st.sidebar.info("Using dataset from session.")
         else:
-            if df is None:
-                st.info("👆 Please configure your data source in the sidebar to begin analysis.")
-                return
-            st.session_state.df = df
-    
+            st.info("👆 Please configure your data source in the sidebar to begin analysis.")
+            return
+
     df = st.session_state.df
+
     
     # Route to appropriate page
     try:
